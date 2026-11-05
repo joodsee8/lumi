@@ -282,7 +282,7 @@ export default function App() {
         </div>
       </main>
       <Pixi msg={msg} tips={TIPS[tab]} onSay={say} intro={intro}
-        onTap={() => say(tab === 'book' ? 'Voy contigo paso a paso. Solo muestro horarios libres.' : HELP[tab], { ms: 3500, mood: 'happy' })} />
+        onTap={() => say(tab === 'book' ? 'Voy contigo paso a paso. Solo muestro horarios libres.' : HELP[tab], { ms: 3500, mood: 'wave' })} />
     </>
   )
 }

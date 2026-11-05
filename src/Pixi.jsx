@@ -1,16 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-/* ============ Sprite pixel art 24x22 ============ */
-const K = '#4a2540'
-const BASE = [
-  ['#8a4a6f', [[8,1,8,1],[6,2,12,1],[5,3,14,10],[5,13,2,3],[17,13,2,3]]],
-  ['#ffe0d0', [[7,4,10,9],[8,13,8,2],[10,15,4,1]]],
-  ['#8a4a6f', [[7,4,10,2],[7,6,2,1],[15,6,2,1]]],
+/* =====================================================================
+   PIXI · sprite de cuerpo completo (cuadrícula 24 x 34, 2 px por pixel)
+   Se dibuja por piezas (piernas, vestido, cabeza, brazos) para poder
+   componer poses. Para ANIMAR más: agrega poses en POSES / frames abajo.
+   ===================================================================== */
+const SK = '#ffe0d0', SL = '#ffc2d9', HAIR = '#8a4a6f', WH = '#ffffff', MINT = '#a8e6df', BOW = '#ff8fb8', INK = '#4a2540'
+const mirror = rs => rs.map(([x, y, w, h]) => [24 - x - w, y, w, h])
+const both = L => ({ L, R: L.map(([c, rs]) => [c, mirror(rs)]) })
+
+/* ---- Cabeza ---- */
+const HEAD = [
+  [HAIR, [[8,1,8,1],[6,2,12,1],[5,3,14,10],[5,13,2,3],[17,13,2,3]]],
+  [SK, [[7,4,10,9],[8,13,8,2]]],
+  [HAIR, [[7,4,10,2],[7,6,2,1],[15,6,2,1]]],
   ['#ffb3cc', [[8,11,2,1],[14,11,2,1]]],
-  ['#ff8fb8', [[16,2,2,3],[19,2,2,3],[18,3,1,1]]],
-  ['#a8e6df', [[4,8,2,4],[18,8,2,4],[5,6,1,2],[18,6,1,2],[6,5,12,1]]],
-  ['#ffc2d9', [[6,16,12,6],[9,15,6,1]]],
-  ['#ffffff', [[11,17,2,2]]]
+  [BOW, [[16,2,2,3],[19,2,2,3],[18,3,1,1]]],
+  [MINT, [[4,8,2,4],[18,8,2,4],[5,6,1,2],[18,6,1,2],[6,5,12,1]]]
 ]
 const EYES = {
   open: [[8,7,3,1],[13,7,3,1],[9,8,1,2],[14,8,1,2],[7,8,1,1],[16,8,1,1]],
@@ -18,20 +24,57 @@ const EYES = {
   happy: [[8,9,1,1],[9,8,1,1],[10,9,1,1],[13,9,1,1],[14,8,1,1],[15,9,1,1]],
   x: [[8,7,1,1],[10,7,1,1],[9,8,1,1],[8,9,1,1],[10,9,1,1],[13,7,1,1],[15,7,1,1],[14,8,1,1],[13,9,1,1],[15,9,1,1]]
 }
+const BROWS_SAD = [[8,6,1,1],[9,6,1,1],[14,6,1,1],[15,6,1,1]]
 const MOUTH = {
-  closed: ['#e0607e', [[11,12,2,1]]],
+  closed: [INK, [[11,12,2,1]]],
   open: ['#b3294e', [[11,12,2,2]]],
   smile: ['#e0607e', [[10,12,1,1],[11,13,2,1],[13,12,1,1]]],
-  oops: ['#e0607e', [[11,12,2,1],[10,13,1,1],[13,13,1,1]]],
+  frown: ['#e0607e', [[11,12,2,1],[10,13,1,1],[13,13,1,1]]],
   wavy: ['#e0607e', [[10,13,1,1],[11,12,1,1],[12,13,1,1],[13,12,1,1]]]
 }
-const SOOT = [[8,5,3,1],[14,5,2,1],[7,10,2,1],[15,11,2,1],[11,10,2,1],[6,16,3,1],[14,17,3,1]]
+const SOOT = [[8,5,3,1],[14,5,2,1],[7,10,2,1],[15,11,2,1],[11,10,2,1]]
+const SOOT_BODY = [[7,19,2,1],[14,22,2,1],[10,23,3,1]]
 const TUFT = [[10,0,1,1],[13,0,1,1],[12,1,1,1],[4,4,1,1],[19,5,1,1]]
+const TEARS = [[8,11,1,2],[15,11,1,2]]
+
+/* ---- Cuerpo ---- */
+const NECK = [SK, [[10,15,4,1]]]
+const DRESS = [
+  [SL, [[7,16,10,2],[8,18,8,3],[7,21,10,1],[6,22,12,1],[5,23,14,2]]],
+  [BOW, [[8,20,8,1]]],
+  [WH, [[5,24,14,1],[11,17,2,2]]]
+]
+const LEGS = {
+  stand: [[SK, [[9,25,2,6],[13,25,2,6]]], [WH, [[9,29,2,2],[13,29,2,2]]], [MINT, [[8,31,3,2],[13,31,3,2]]]],
+  a: [[SK, [[7,25,2,6],[15,25,2,6]]], [WH, [[7,29,2,2],[15,29,2,2]]], [MINT, [[6,31,3,2],[15,31,3,2]]]],
+  b: [[SK, [[10,25,2,5],[12,25,2,5]]], [WH, [[10,28,2,2],[12,28,2,2]]], [MINT, [[9,30,3,2],[12,30,3,2]]]]
+}
+
+/* ---- Brazos (solo el izquierdo; el derecho se espeja) ---- */
+const ARM = {
+  down: [[SL, [[5,16,2,2]]], [SK, [[5,18,2,5]]]],
+  hips: [[SL, [[5,16,2,1],[4,17,2,1]]], [SK, [[3,18,2,2],[4,20,2,1],[5,21,3,1]]]],
+  sad: [[SL, [[6,16,2,2]]], [SK, [[7,18,2,2],[8,20,3,2]]]],
+  up: [[SL, [[5,16,2,1],[4,15,2,1]]], [SK, [[3,14,2,1],[2,9,2,5],[2,7,2,2]]]],
+  up2: [[SL, [[5,16,2,1],[4,15,2,1]]], [SK, [[3,14,2,1],[2,9,2,5],[3,7,2,2]]]],
+  flail: [[SL, [[5,16,2,1],[4,16,1,1]]], [SK, [[2,15,3,1],[1,13,2,2],[0,12,2,1]]]]
+}
+const POSES = {
+  down: { ...both(ARM.down) },
+  hips: { ...both(ARM.hips) },
+  sad: { ...both(ARM.sad), extra: [[SK, [[11,20,2,2]]]] },
+  up: { ...both(ARM.up) },
+  flail: { ...both(ARM.flail) },
+  // el saludo tiene 2 cuadros que se alternan
+  wave: [{ L: both(ARM.down).L, R: both(ARM.up).R }, { L: both(ARM.down).L, R: both(ARM.up2).R }]
+}
+
 const rects = (rs, fill, cls) => (
   <g className={cls} fill={fill}>{rs.map(([x, y, w, h], i) => <rect key={i} x={x} y={y} width={w} height={h} />)}</g>
 )
+const layers = (ls, k = '') => ls.map(([c, rs], i) => <g key={k + i}>{rects(rs, c)}</g>)
 
-/* ============ Paracaídas pixel art (40x26) ============ */
+/* ---- Paracaídas (40 x 30) ---- */
 const DOME = [[14,26],[10,30],[7,33],[5,35],[4,36],[3,37],[3,37]]
 const CH = []
 DOME.forEach(([a, b], y) => {
@@ -48,18 +91,19 @@ const line = (x0, y0, x1, y1) => {
   const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))
   for (let i = 0; i <= n; i++) STR.push([Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n)])
 }
-;[[4,7],[12,7],[28,7],[36,7]].forEach(([x, y]) => line(x, y, 20, 25))
+// las cuerdas terminan en las manos de Pixi
+line(4, 7, 11, 29); line(12, 7, 11, 29); line(28, 7, 29, 29); line(36, 7, 29, 29)
 
 /* humo: [dx, dy, escala] */
 const PUFFS = [[-34,-6,2.4],[-18,-26,2.8],[0,-34,3],[20,-22,2.6],[36,-4,2.2],[-28,-44,2.4],[6,-52,2],[30,-40,2.5],[-8,-18,3.2],[14,-12,2.8]]
 
 /* ============ Posiciones en pantalla ============ */
-const W = 56, H = 54
+const W = 48, H = 68
 const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 const minY = () => (document.querySelector('header')?.getBoundingClientRect().bottom ?? 0) + 6
 const bottomGap = () => (window.innerWidth <= 760 ? 84 : 16)
 const landing = () => ({ x: Math.round(window.innerWidth * 0.62 - W / 2), y: window.innerHeight - H - bottomGap() })
-// at: 'br' | 'bl' | 'land' | 'peekR' | 'peekL' | selector CSS (se posa en la esquina superior derecha del elemento)
+// at: 'br' | 'bl' | 'land' | 'peekR' | 'peekL' | selector CSS (se para sobre el borde superior del elemento)
 function spot(at) {
   const vw = window.innerWidth, vh = window.innerHeight, bot = bottomGap()
   const maxY = vh - H - bot
@@ -72,14 +116,15 @@ function spot(at) {
     if (el) {
       const r = el.getBoundingClientRect()
       if (r.bottom > minY() && r.top < vh - bot) {
-        return { x: Math.min(vw - W - 8, Math.max(8, r.right - W - 8)), y: Math.min(maxY, Math.max(minY(), r.top - H + 10)) }
+        return { x: Math.min(vw - W - 8, Math.max(8, r.right - W - 8)), y: Math.min(maxY, Math.max(minY(), r.top - H + 6)) }
       }
     }
   }
   return { x: vw - W - 14, y: maxY }
 }
 
-/* msg = { t, id, ms?, at?, mood?, cta? }   mood: idle | happy | oops | think | crash
+/* msg = { t, id, ms?, at?, mood?, cta? }
+   mood: idle | happy | wave | oops | think | crash | proud | sad
    intro = { text, cta:{label, fn} }  -> caída con paracaídas al abrir la página */
 export default function Pixi({ msg, onTap, onSay, tips = [], intro }) {
   const startIntro = !!intro && !reduced()
@@ -94,6 +139,7 @@ export default function Pixi({ msg, onTap, onSay, tips = [], intro }) {
   const [moving, setMoving] = useState(false)
   const [follow, setFollow] = useState(false)
   const [burst, setBurst] = useState(0)
+  const [dirty, setDirty] = useState(false)
   const [phase, setPhase] = useState(startIntro ? 'fall' : null) // fall | crash | null
   const [chute, setChute] = useState(startIntro)
   const [smoke, setSmoke] = useState(0)
@@ -101,7 +147,7 @@ export default function Pixi({ msg, onTap, onSay, tips = [], intro }) {
   const T = useRef({})
   const R = useRef({})
   const lock = useRef(startIntro) // mientras dura la intro se ignoran otros mensajes
-  R.current = { pos, at, mode, show, tips, onSay }
+  R.current = { pos, at, mode, show, tips, onSay, dirty }
 
   const goTo = useCallback(a => {
     const p = spot(a), o = R.current.pos
@@ -130,6 +176,7 @@ export default function Pixi({ msg, onTap, onSay, tips = [], intro }) {
     }
     T.current.hide = setTimeout(() => {
       setShow(false); setCta(null); setMood('idle')
+      if (R.current.dirty) { setBurst(b => b + 1); setDirty(false) } // se limpia con destellos
       if (target !== 'br') T.current.ret = setTimeout(() => goTo('br'), 450)
     }, (m.ms || 5200) + m.t.length * 25)
   }, [goTo])
@@ -137,15 +184,18 @@ export default function Pixi({ msg, onTap, onSay, tips = [], intro }) {
   // Mensajes que llegan desde la app
   useEffect(() => { if (msg?.t && !lock.current) speak(msg) }, [msg, speak])
 
-  // --- Intro: cae con paracaídas, aterriza mal, humo y mensaje ---
+  // --- Intro: cae con paracaídas, aterriza mal, humo, manos a la cintura y se pone triste ---
   useEffect(() => {
     if (!intro) return
-    if (!startIntro) { lock.current = false; speak({ t: intro.text, mood: 'oops', ms: 6000, cta: intro.cta }); return }
-    const a = setTimeout(() => { setPhase('crash'); setMood('crash'); setSmoke(1) }, 2900)
-    const b = setTimeout(() => { setChute(false); setPhase(null) }, 3900)
-    const c = setTimeout(() => { lock.current = false; speak({ t: intro.text, mood: 'crash', at: 'land', ms: 6500, cta: intro.cta }) }, 4300)
-    T.current.intro = [a, b, c]
-    return () => T.current.intro.forEach(clearTimeout)
+    if (!startIntro) { lock.current = false; speak({ t: intro.text, mood: 'sad', ms: 6000, cta: intro.cta }); return }
+    const t = [
+      setTimeout(() => { setPhase('crash'); setMood('crash'); setDirty(true); setSmoke(1) }, 2900), // aterriza mal
+      setTimeout(() => { setChute(false); setPhase(null) }, 3900),
+      setTimeout(() => setMood('proud'), 4200),                                                      // se incorpora, manos a la cintura
+      setTimeout(() => { lock.current = false; speak({ t: intro.text, mood: 'sad', at: 'land', ms: 6500, cta: intro.cta }) }, 5400) // se entristece
+    ]
+    T.current.intro = t
+    return () => t.forEach(clearTimeout)
   }, [intro, startIntro, speak])
 
   // --- Seguir el elemento al hacer scroll / cambiar tamaño ---
@@ -170,7 +220,7 @@ export default function Pixi({ msg, onTap, onSay, tips = [], intro }) {
       last.current = Date.now()
       if (lock.current) { // tocar la pantalla salta la intro
         lock.current = false; (T.current.intro || []).forEach(clearTimeout)
-        setPhase(null); setChute(false); setSmoke(0); setMood('idle'); goTo('br'); return
+        setPhase(null); setChute(false); setSmoke(0); setMood('idle'); setDirty(false); goTo('br'); return
       }
       if (R.current.mode !== 'normal') { setMode('normal'); setMood('idle'); goTo('br') }
     }
@@ -194,11 +244,18 @@ export default function Pixi({ msg, onTap, onSay, tips = [], intro }) {
 
   useEffect(() => () => Object.values(T.current).flat().forEach(h => { clearTimeout(h); clearInterval(h) }), [])
 
+  /* ---------- Qué pose y qué cara toca ---------- */
   const vw = window.innerWidth
   const right = pos.x > vw / 2
   const avail = right ? pos.x - 20 : vw - pos.x - W - 20
-  const asleep = mode === 'sleep', crash = mood === 'crash'
-  const mouth = asleep ? MOUTH.closed : crash ? MOUTH.wavy : mood === 'happy' ? MOUTH.smile : mood === 'oops' ? MOUTH.oops : MOUTH.closed
+  const asleep = mode === 'sleep', crash = mood === 'crash', sad = mood === 'sad'
+  const poseName = asleep ? 'down' : phase === 'fall' ? 'up' : crash ? 'flail' : mood === 'proud' ? 'hips'
+    : sad ? 'sad' : mood === 'happy' ? 'up' : mood === 'wave' ? 'wave' : 'down'
+  const pose = POSES[poseName]
+  const headDy = asleep ? 2 : sad ? 1 : 0
+  const mouth = asleep || mood === 'proud' ? MOUTH.closed : crash ? MOUTH.wavy : sad || mood === 'oops' ? MOUTH.frown
+    : mood === 'happy' || mood === 'wave' ? MOUTH.smile : MOUTH.closed
+  const armsOf = p => <>{layers(p.L, 'L')}{layers(p.R, 'R')}{p.extra && layers(p.extra, 'X')}</>
 
   return (
     <div id="bot" className={(follow ? 'follow ' : '') + mode} style={{ transform: `translate3d(${pos.x}px,${pos.y}px,0)` }}>
@@ -207,23 +264,43 @@ export default function Pixi({ msg, onTap, onSay, tips = [], intro }) {
         {txt}{mood === 'think' && <span className="dots" aria-hidden="true"><i /><i /><i /></span>}
         {cta && <button className="pri sm" onClick={() => { cta.fn(); setShow(false); setCta(null) }}>{cta.label}</button>}
       </div>
+      <div className={'shadow' + (phase === 'fall' ? ' grow' : '')} aria-hidden="true" />
       <div className={'fall' + (phase === 'fall' ? ' dropping' : '')} style={{ '--fy': pos.y + 190 + 'px' }}>
         <div className={'sway' + (phase === 'fall' ? ' swaying' : '')}>
           {chute && (
-            <svg className={'chute' + (phase === 'crash' ? ' down' : '')} viewBox="0 0 40 26" width="120" height="78" shapeRendering="crispEdges" aria-hidden="true">
+            <svg className={'chute' + (phase === 'crash' ? ' down' : '')} viewBox="0 0 40 30" width="80" height="60" shapeRendering="crispEdges" aria-hidden="true">
               {CH.map(([x, y, w, c], i) => <rect key={'c' + i} x={x} y={y} width={w} height="1" fill={c} />)}
               {STR.map(([x, y], i) => <rect key={'s' + i} x={x} y={y} width="1" height="1" fill="#b99aa9" />)}
+            </svg>
+          )}
+          {sad && (
+            <svg className="rain" viewBox="0 0 14 10" width="28" height="20" shapeRendering="crispEdges" aria-hidden="true">
+              {rects([[4,0,6,1],[2,1,10,1],[1,2,12,2]], '#b9c7d8')}{rects([[2,4,10,1]], '#93a6bd')}
+              <g className="drops">{rects([[3,6,1,2],[7,6,1,2],[10,6,1,2]], '#6fc3ff')}</g>
             </svg>
           )}
           <button id="av" className={(moving ? 'moving ' : '') + (talk ? 'talk ' : '') + 'mood-' + mood}
             style={{ rotate: mode === 'peek' ? (right ? '-16deg' : '16deg') : '0deg' }}
             onClick={onTap} aria-label="Pixi, asistente. Toca para ver ayuda">
-            <svg viewBox="0 0 24 22" shapeRendering="crispEdges" aria-hidden="true">
-              {BASE.map(([c, rs], i) => <g key={i}>{rects(rs, c)}</g>)}
-              {crash && <>{rects(TUFT, '#8a4a6f')}<g opacity=".5">{rects(SOOT, '#3a2430')}</g></>}
-              {asleep ? rects(EYES.closed, K) : crash ? rects(EYES.x, K) : mood === 'happy' ? rects(EYES.happy, K)
-                : <>{rects(EYES.open, K, 'eo')}{rects(EYES.closed, K, 'ec')}</>}
-              {talk ? <>{rects(MOUTH.open[1], MOUTH.open[0], 'mt1')}{rects(MOUTH.closed[1], MOUTH.closed[0], 'mt2')}</> : rects(mouth[1], mouth[0])}
+            <svg viewBox="0 0 24 34" width="48" height="68" shapeRendering="crispEdges" aria-hidden="true">
+              {/* piernas: 3 cuadros; al caminar se alternan */}
+              <g className="lg0">{layers(LEGS.stand)}</g><g className="lg1">{layers(LEGS.a)}</g><g className="lg2">{layers(LEGS.b)}</g>
+              {/* vestido y cuello */}
+              {layers([NECK, ...DRESS], 'B')}
+              {dirty && <g opacity=".5">{rects(SOOT_BODY, '#3a2430')}</g>}
+              {/* cabeza */}
+              <g transform={`translate(0 ${headDy})`}>
+                {layers(HEAD, 'H')}
+                {dirty && <>{rects(TUFT, HAIR)}<g opacity=".5">{rects(SOOT, '#3a2430')}</g></>}
+                {asleep ? rects(EYES.closed, INK) : crash ? rects(EYES.x, INK) : mood === 'happy' || mood === 'wave' ? rects(EYES.happy, INK)
+                  : <>{rects(EYES.open, INK, 'eo')}{rects(EYES.closed, INK, 'ec')}</>}
+                {sad && <>{rects(BROWS_SAD, INK)}<g className="tear">{rects(TEARS, '#6fc3ff')}</g></>}
+                {talk ? <>{rects(MOUTH.open[1], MOUTH.open[0], 'mt1')}{rects(MOUTH.closed[1], MOUTH.closed[0], 'mt2')}</> : rects(mouth[1], mouth[0])}
+              </g>
+              {/* brazos (al frente) */}
+              {Array.isArray(pose)
+                ? <><g className="w1">{armsOf(pose[0])}</g><g className="w2">{armsOf(pose[1])}</g></>
+                : armsOf(pose)}
             </svg>
           </button>
         </div>
@@ -236,7 +313,7 @@ export default function Pixi({ msg, onTap, onSay, tips = [], intro }) {
       {crash && <div className="stars" aria-hidden="true"><b>★</b><b>★</b><b>★</b></div>}
       {burst > 0 && (
         <div className="burst" key={burst} aria-hidden="true">
-          {['♥', '✦', '♥', '✦', '♥', '✦'].map((c, i) => <span key={i} style={{ '--dx': (i - 2.5) * 14 + 'px', '--d': i * 60 + 'ms' }}>{c}</span>)}
+          {['♥', '✦', '♥', '✦', '♥', '✦'].map((c, i) => <span key={i} style={{ '--dx': (i - 2.5) * 12 + 'px', '--d': i * 60 + 'ms' }}>{c}</span>)}
         </div>
       )}
       {asleep && <div className="zzz" aria-hidden="true"><span>z</span><span>Z</span></div>}

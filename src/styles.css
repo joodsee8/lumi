@@ -117,9 +117,9 @@ button.sel{animation:popin .3s backwards}
 .cf{position:fixed;top:-12px;width:9px;height:9px;z-index:30;pointer-events:none;animation:fall 1.9s ease-in forwards}
 
 /* Pixi */
-#bot{position:fixed;left:0;top:0;width:56px;height:54px;z-index:10;pointer-events:none;transition:transform .95s cubic-bezier(.45,.05,.2,1)}
+#bot{position:fixed;left:0;top:0;width:48px;height:68px;z-index:10;pointer-events:none;transition:transform .95s cubic-bezier(.45,.05,.2,1)}
 #bot.follow{transition-duration:.18s}
-#av{pointer-events:auto;width:100%;height:100%;padding:3px;border-radius:14px;min-height:0;box-shadow:0 3px 12px rgba(0,0,0,.2);transform-origin:50% 100%;transition:scale .2s,rotate .6s cubic-bezier(.45,.05,.2,1);animation:bob 3.2s ease-in-out infinite}
+#av{pointer-events:auto;width:100%;height:100%;padding:0;border:0;border-radius:0;background:none;box-shadow:none;min-height:0;transform-origin:50% 100%;transition:scale .2s,rotate .6s cubic-bezier(.45,.05,.2,1);animation:bob 3.2s ease-in-out infinite}
 #av svg{width:100%;height:100%;image-rendering:pixelated;display:block}
 #av.talk{scale:1.14}
 #av.moving{animation:hop .45s ease-in-out 2}
@@ -133,7 +133,7 @@ button.sel{animation:popin .3s backwards}
 @keyframes ec{0%,94%,100%{opacity:0}95%,97%{opacity:1}}
 .mt1{animation:m1 .3s steps(1) infinite}.mt2{animation:m2 .3s steps(1) infinite}
 @keyframes m1{0%{opacity:1}50%{opacity:0}}@keyframes m2{0%{opacity:0}50%{opacity:1}}
-#bub{position:absolute;bottom:4px;width:max-content;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px;font-weight:600;line-height:1.4;box-shadow:0 4px 16px rgba(0,0,0,.14);opacity:0;transform:scale(.85);pointer-events:none;transition:opacity .25s,transform .3s cubic-bezier(.3,1.4,.5,1)}
+#bub{position:absolute;bottom:34px;width:max-content;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px;font-weight:600;line-height:1.4;box-shadow:0 4px 16px rgba(0,0,0,.14);opacity:0;transform:scale(.85);pointer-events:none;transition:opacity .25s,transform .3s cubic-bezier(.3,1.4,.5,1)}
 #bub.show{opacity:1;transform:none}
 #bub.l{right:calc(100% + 10px);transform-origin:100% 100%}#bub.r{left:calc(100% + 10px);transform-origin:0 100%}
 #bub::after{content:"";position:absolute;bottom:12px;width:10px;height:10px;background:var(--panel);border:1px solid var(--line)}
@@ -203,26 +203,48 @@ button.sel{animation:popin .3s backwards}
 /* =================== INTRO: PARACAÍDAS =================== */
 .fall,.sway{position:absolute;inset:0}
 .fall{pointer-events:none}
-.sway{transform-origin:50% -60px}
+.sway{transform-origin:50% -42px}
 #av{display:block}
 .dropping{animation:chutefall 2.9s cubic-bezier(.25,.55,.35,1) both}
 @keyframes chutefall{from{transform:translate(-60px,calc(var(--fy)*-1))}to{transform:none}}
 .swaying{animation:sway 1.45s ease-in-out infinite alternate}
 @keyframes sway{from{transform:rotate(-9deg)}to{transform:rotate(9deg)}}
-.chute{position:absolute;left:-32px;top:-70px;pointer-events:none;transform-origin:50% 100%}
+.chute{position:absolute;left:-16px;top:-42px;pointer-events:none;transform-origin:50% 100%}
 .chute.down{animation:collapse .9s ease-in forwards}
 @keyframes collapse{0%{transform:none;opacity:1}40%{transform:translate(18px,20px) scale(1.05,.55) rotate(8deg)}100%{transform:translate(36px,46px) scale(1.2,.2) rotate(14deg);opacity:0}}
 #av.mood-crash{animation:squash .75s ease-out,wobble 1.5s .75s ease-in-out infinite}
 @keyframes squash{0%{transform:none}20%{transform:scale(1.35,.55)}45%{transform:scale(.9,1.12) translateY(-10px)}70%{transform:scale(1.1,.9)}100%{transform:none}}
 @keyframes wobble{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
-.smoke{position:absolute;left:50%;top:60%;width:0;height:0;pointer-events:none}
+.smoke{position:absolute;left:50%;top:72%;width:0;height:0;pointer-events:none}
 .smoke i{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:#d9d2d6;opacity:0;animation:puff 2.7s ease-out forwards;animation-delay:var(--d)}
 .smoke i:nth-child(3n){background:#b5acb1}.smoke i:nth-child(3n+1){background:#e9e4e7}
 @keyframes puff{0%{opacity:0;transform:translate(0,0) scale(.3)}25%{opacity:.95}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(var(--s))}}
-.stars{position:absolute;left:50%;top:-4px;width:0;height:0;animation:orbit 1.3s linear infinite;pointer-events:none}
+.stars{position:absolute;left:50%;top:4px;width:0;height:0;animation:orbit 1.3s linear infinite;pointer-events:none}
 .stars b{position:absolute;font-size:12px;color:#ffc94d;font-weight:400}
 .stars b:nth-child(1){left:-20px;top:0}.stars b:nth-child(2){left:14px;top:-6px}.stars b:nth-child(3){left:-3px;top:8px}
 @keyframes orbit{to{transform:rotate(360deg)}}
 #bub.show{pointer-events:auto}
 #bub .sm{display:block;margin-top:8px;min-height:36px;padding:6px 14px;font-size:13px}
 @media (prefers-reduced-motion:reduce){.smoke,.stars{display:none}}
+
+/* =================== PIXI DE CUERPO COMPLETO =================== */
+#av:hover,#av:active{transform:none;box-shadow:none;border:0}
+#av svg{overflow:visible}
+.shadow{position:absolute;left:4px;bottom:-4px;width:40px;height:9px;border-radius:50%;background:radial-gradient(rgba(0,0,0,.3),transparent 70%);pointer-events:none}
+.shadow.grow{animation:shgrow 2.9s cubic-bezier(.25,.55,.35,1) both}
+@keyframes shgrow{from{opacity:0;transform:scale(.2)}to{opacity:1;transform:none}}
+.lg1,.lg2,.w2{opacity:0}
+#av.moving .lg0{opacity:0}
+#av.moving .lg1{animation:lgA .36s steps(1) infinite}
+#av.moving .lg2{animation:lgB .36s steps(1) infinite}
+@keyframes lgA{0%{opacity:1}50%{opacity:0}}
+@keyframes lgB{0%{opacity:0}50%{opacity:1}}
+.w1{animation:lgA .5s steps(1) infinite}.w2{animation:lgB .5s steps(1) infinite}
+.rain{position:absolute;left:10px;top:-22px;pointer-events:none;animation:popin .4s both}
+.drops{animation:rainfall .9s linear infinite}
+@keyframes rainfall{0%{opacity:0;transform:translateY(-1px)}30%{opacity:1}100%{opacity:0;transform:translateY(3px)}}
+.tear{animation:tear 1.4s ease-in infinite}
+@keyframes tear{0%{opacity:0;transform:translateY(0)}20%{opacity:1}100%{opacity:0;transform:translateY(4px)}}
+#av.mood-sad{animation:sob 1.6s ease-in-out infinite}
+@keyframes sob{0%,100%{transform:translateY(0)}50%{transform:translateY(2px)}}
+.burst{top:10px}
