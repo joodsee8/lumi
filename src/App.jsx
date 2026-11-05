@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from './supabase'
 import Pixi from './Pixi'
+import Intro from './Intro'
 import { Ambient, Sparkles, Skeleton, Confetti } from './fx'
 import { money, dayKey, dow, dayLabel, timeLabel, dateLong, errMsg, SLUG } from './lib'
 
@@ -242,15 +243,23 @@ export default function App() {
   const [pre, setPre] = useState(null)
   const [bk, setBk] = useState(0)
   const [msg, setMsg] = useState(null)
-  const intro = useMemo(() => ({
-    text: '¡Ay no! Mis uñas y pestañas quedaron arruinadas… ¿Por qué no agendamos una cita?',
-    cta: { label: 'Agendar cita', fn: () => { setTab('book'); window.scrollTo(0, 0) } }
-  }), [])
+  const [splash, setSplash] = useState(true)
+  const skipHelp = useRef(false)
   const say = useCallback((t, o) => setMsg({ t, id: Date.now(), ...(typeof o === 'number' ? { ms: o } : o || {}) }), [])
 
-  useEffect(() => { if (!data.loading && !data.error && tab !== 'book' && HELP[tab]) say(HELP[tab], { at: ANCH[tab], mood: tab === 'home' ? 'happy' : 'idle' }) }, [tab, say, data.loading, data.error])
+  useEffect(() => {
+    if (splash || data.loading || data.error || tab === 'book' || !HELP[tab]) return
+    if (skipHelp.current) { skipHelp.current = false; return }
+    say(HELP[tab], { at: ANCH[tab], mood: tab === 'home' ? 'happy' : 'idle' })
+  }, [tab, say, splash, data.loading, data.error])
   const go = t => { setTab(t); window.scrollTo(0, 0) }
   const newBooking = (id = null) => { setPre(id); setBk(k => k + 1) }
+  // "Agendar cita" en la bienvenida: salen los servicios y Pixi pregunta si necesitas ayuda
+  const start = () => {
+    skipHelp.current = true
+    setSplash(false); setTab('svc'); window.scrollTo(0, 0)
+    say('¿Necesitas ayuda?', { ms: 8000, mood: 'wave' })
+  }
 
   if (data.loading) return <><Ambient /><main><Skeleton n={4} /></main></>
   if (data.error) return <><Ambient /><main><div className="card"><h3>No encontramos este negocio</h3><p className="mute">Revisa el enlace e intenta de nuevo.</p></div></main></>
@@ -281,8 +290,9 @@ export default function App() {
           )}
         </div>
       </main>
-      <Pixi msg={msg} tips={TIPS[tab]} onSay={say} intro={intro}
-        onTap={() => say(tab === 'book' ? 'Voy contigo paso a paso. Solo muestro horarios libres.' : HELP[tab], { ms: 3500, mood: 'wave' })} />
+      {!splash && <Pixi msg={msg} tips={TIPS[tab]} onSay={say}
+        onTap={() => say('¿Necesitas ayuda?', { ms: 4000, mood: 'wave' })} />}
+      {splash && <Intro name={b.name} onStart={start} />}
     </>
   )
 }
